@@ -91,8 +91,11 @@ akmessage/
 ---
 
 ## ✨ Screenshots
+<img width="1414" alt="Screenshot 2025-06-15 at 03 20 35" src="https://github.com/user-attachments/assets/cbf9c4b0-257b-4aee-9124-1394ad266d68" />
 
-> _Add screenshots of your app here!_
+<img width="1414" alt="Screenshot 2025-06-15 at 03 20 46" src="https://github.com/user-attachments/assets/c866ab6d-8050-481f-aa22-bde6774ea19b" />
+
+<img width="1414" alt="Screenshot 2025-06-15 at 03 19 48" src="https://github.com/user-attachments/assets/07593a30-8026-49c4-a47b-c6f4a1225706" />
 
 ---
 
