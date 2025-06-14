@@ -109,4 +109,4 @@ MIT License
 
 ---
 
-**Made with ❤️ using Flask and
+**Made with ❤️ using Flask and Socket.IO**
