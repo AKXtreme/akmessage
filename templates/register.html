@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Register - Akmessage{% endblock %}
+{% block content %}
+  <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-4">
+      <div class="card shadow p-4">
+        <h2 class="mb-4 text-center">Create Your Akmessage Account</h2>
+        <form method="POST">
+            <input name="username" placeholder="Username" required class="form-control mb-3">
+            <input name="password" type="password" placeholder="Password" required class="form-control mb-3">
+            <button type="submit" class="btn btn-primary w-100">Register</button>
+        </form>
+        <div class="text-center mt-3">
+          <span>Already have an account?</span>
+          <a href="{{ url_for('login') }}" class="btn btn-link">Login here</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

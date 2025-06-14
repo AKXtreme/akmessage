@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Chat - Akmessage{% endblock %}
+{% block content %}
+<div class="row" style="height: 80vh;">
+  <div class="col-md-4 border-end" style="overflow-y:auto;">
+    <a href="{{ url_for('start_conversation') }}" class="btn btn-success w-100 mb-3">New Chat</a>
+    <h4 class="mt-3">Chats</h4>
+    <ul class="list-group">
+      {% for conv in current_user.conversations %}
+        <a href="{{ url_for('conversation', conv_id=conv.id) }}" class="list-group-item list-group-item-action {% if conv.id == conversation.id %}active{% endif %}">
+          {% if conv.is_group %}
+            <strong>{{ conv.name }}</strong>
+          {% else %}
+            {% for user in conv.users %}
+              {% if user.id != current_user.id %}
+                <strong>{{ user.username }}</strong>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        </a>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="col-md-8 d-flex flex-column" style="height: 80vh;">
+    <div class="border-bottom py-2 px-3">
+      {% if conversation.is_group %}
+        <strong>{{ conversation.name }}</strong>
+      {% else %}
+        {% for user in conversation.users %}
+          {% if user.id != current_user.id %}
+            <strong>{{ user.username }}</strong>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    </div>
+    <div id="messages" class="flex-grow-1 overflow-auto px-3" style="background:#f8f9fa;">
+      <ul class="list-unstyled" id="messages-list">
+        {% for message in messages %}
+          <li class="mb-2 {% if message.user_id == current_user.id %}text-end{% endif %}">
+            <span class="badge bg-{% if message.user_id == current_user.id %}primary{% else %}secondary{% endif %}">
+              {{ message.content }}
+              {% if message.file_path %}
+                <br>
+                {% if message.file_path.endswith('.webm') %}
+                  <audio controls>
+                    <source src="{{ url_for('static', filename='uploads/' + message.file_path.split('/')[-1]) }}" type="audio/webm">
+                    Your browser does not support the audio element.
+                  </audio>
+                {% elif message.file_path.endswith('.png') or message.file_path.endswith('.jpg') or message.file_path.endswith('.jpeg') or message.file_path.endswith('.gif') %}
+                  <img src="{{ url_for('static', filename='uploads/' + message.file_path.split('/')[-1]) }}" style="max-width:150px;max-height:150px;">
+                {% else %}
+                  <a href="{{ url_for('static', filename='uploads/' + message.file_path.split('/')[-1]) }}" target="_blank">Download file</a>
+                {% endif %}
+              {% endif %}
+            </span>
+            <br>
+            <small class="text-muted">{{ message.timestamp.strftime('%H:%M') }}</small>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <!-- Chat input form with file and voice -->
+    <form id="chat-form" class="p-3 border-top d-flex" enctype="multipart/form-data" method="POST">
+      <input id="msg" name="msg" autocomplete="off" placeholder="Type a message..." class="form-control me-2" />
+      <input type="file" id="file" name="file" class="form-control me-2" style="max-width:200px;">
+      <button type="button" id="record-btn" class="btn btn-secondary me-2">🎤</button>
+      <input type="file" id="voice" name="voice" accept="audio/*" style="display:none;">
+      <button type="submit" class="btn btn-primary">Send</button>
+    </form>
+  </div>
+</div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const socket = io();
+  const room = "{{ conversation.id }}";
+  socket.emit('join', {room: room});
+
+  document.getElementById('chat-form').onsubmit = function(e) {
+    // Only allow normal submit if a file or voice is attached, otherwise use socket
+    const fileInput = document.getElementById('file');
+    const voiceInput = document.getElementById('voice');
+    if ((fileInput && fileInput.files.length > 0) || (voiceInput && voiceInput.files.length > 0)) {
+      // Allow normal form submit for file/voice
+    } else {
+      e.preventDefault();
+      const msgInput = document.getElementById('msg');
+      const msg = msgInput.value;
+      if (msg.trim() !== "") {
+        socket.emit('send_message', {room: room, msg: msg});
+        msgInput.value = '';
+      }
+    }
+  };
+
+  socket.on('receive_message', function(data) {
+    const ul = document.getElementById('messages-list');
+    const li = document.createElement('li');
+    li.className = "mb-2" + (data.user === "{{ current_user.username }}" ? " text-end" : "");
+    li.innerHTML = `<span class="badge bg-${data.user === "{{ current_user.username }}" ? "primary" : "secondary"}">${data.msg}</span><br><small class="text-muted">now</small>`;
+    ul.appendChild(li);
+    document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+  });
+
+  // Voice recording
+  let mediaRecorder;
+  let audioChunks = [];
+  document.getElementById('record-btn').onclick = async function() {
+    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.start();
+      audioChunks = [];
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.onstop = e => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const fileInput = document.getElementById('voice');
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(new File([audioBlob], "voice.webm"));
+        fileInput.files = dataTransfer.files;
+        document.getElementById('chat-form').submit();
+      };
+      this.textContent = "⏹️ Stop";
+    } else if (mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+      this.textContent = "🎤";
+    }
+  };
+</script>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Chat Room - {{ room.name }}{% endblock %}
+{% block content %}
+  <h2>Room: {{ room.name }}</h2>
+  <ul id="messages" class="list-group mb-3">
+    {% for message in messages %}
+      <li class="list-group-item d-flex align-items-center">
+        {% set user = user_by_id(message.user_id) %}
+        {% if user and user.profile_pic %}
+          <img src="{{ url_for('static', filename=user.profile_pic) }}" alt="Profile" width="32" height="32" class="rounded-circle me-2">
+        {% endif %}
+        <strong>{{ user.username if user else message.user_id }}</strong>: {{ message.content }}
+        {% if message.file_path %}
+          <br>
+          <a href="{{ url_for('static', filename=message.file_path) }}" target="_blank">Download Attachment</a>
+        {% endif %}
+        <em class="text-muted ms-2" style="font-size:0.8em;">{{ message.timestamp }}</em>
+      </li>
+    {% endfor %}
+  </ul>
+  <div id="typing-indicator" class="text-muted mb-2"></div>
+  <form id="chat-form" method="POST" enctype="multipart/form-data" class="mb-3">
+    <input id="msg" name="msg" autocomplete="off" placeholder="Type a message..." class="form-control mb-2" />
+    <input type="file" name="file" class="form-control mb-2" />
+    <button class="btn btn-primary">Send</button>
+  </form>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const socket = io();
+    const room = "{{ room.id }}";
+    socket.emit('join', {room: room});
+
+    socket.on('receive_message', function(data) {
+        const li = document.createElement('li');
+        li.className = "list-group-item d-flex align-items-center";
+        if (data.profile_pic) {
+            li.innerHTML = `<img src="/static/${data.profile_pic}" alt="Profile" width="32" height="32" class="rounded-circle me-2">`;
+        }
+        li.innerHTML += `<strong>${data.user}</strong>: ${data.msg}`;
+        document.getElementById('messages').appendChild(li);
+    });
+
+    document.getElementById('chat-form').onsubmit = function(e) {
+        e.preventDefault();
+        const msg = document.getElementById('msg').value;
+        socket.emit('send_message', {room: room, msg: msg});
+        document.getElementById('msg').value = '';
+        this.submit();
+    };
+
+    const msgInput = document.getElementById('msg');
+    msgInput.addEventListener('input', function() {
+        socket.emit('typing', {room: room});
+    });
+
+    socket.on('show_typing', function(data) {
+        document.getElementById('typing-indicator').innerText = data.user + ' is typing...';
+        setTimeout(() => {
+            document.getElementById('typing-indicator').innerText = '';
+        }, 1500);
+    });
+
+    window.addEventListener('focus', function() {
+        socket.emit('read_messages', {room: room});
+    });
+
+    socket.on('messages_read', function(data) {
+        // Optionally show a read receipt indicator
+        // e.g., document.getElementById('typing-indicator').innerText = data.user + ' has read the messages';
+    });
+  </script>
+{% endblock %}
