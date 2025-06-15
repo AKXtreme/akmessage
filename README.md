@@ -3,6 +3,7 @@
 Akmessage is a modern, real-time chat application that i built for CS50 final project with Flask, Flask-SocketIO, and SQLAlchemy.  
 It supports private and group conversations, file sharing, and voice messages—all in a clean, responsive interface.
 
+#### Video Demo:  <https://youtu.be/Okqn_LsiQXs?si=jiYDmXA59JAeiHGr>
 ---
 
 ## 🚀 Features
